@@ -437,8 +437,10 @@ def widget_script():
             position: fixed;
             bottom: 100px;
             right: 24px;
-            width: 380px;
-            height: 580px;
+            max-height: calc(100vh - 140px);
+            width: 360px;
+            height: 520px;
+            max-height: calc(100vh - 160px);
             background: #0f0f1a;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
