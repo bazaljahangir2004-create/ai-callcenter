@@ -6,7 +6,6 @@
     <title>AI Restaurant Bot 🍽️</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
             font-family: 'Segoe UI', sans-serif;
             background: #f0f2f5;
@@ -15,7 +14,6 @@
             align-items: center;
             height: 100vh;
         }
-
         .chat-container {
             width: 420px;
             height: 650px;
@@ -26,7 +24,6 @@
             flex-direction: column;
             overflow: hidden;
         }
-
         .chat-header {
             background: linear-gradient(135deg, #25D366, #128C7E);
             color: white;
@@ -35,7 +32,6 @@
             align-items: center;
             gap: 12px;
         }
-
         .bot-avatar {
             width: 45px;
             height: 45px;
@@ -46,10 +42,8 @@
             justify-content: center;
             font-size: 22px;
         }
-
         .bot-info h3 { font-size: 16px; }
         .bot-info p { font-size: 12px; opacity: 0.85; }
-
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -59,7 +53,6 @@
             gap: 12px;
             background: #e5ddd5;
         }
-
         .message {
             max-width: 80%;
             padding: 10px 14px;
@@ -68,29 +61,25 @@
             line-height: 1.5;
             white-space: pre-line;
         }
-
         .bot-message {
             background: white;
             align-self: flex-start;
             border-radius: 0 12px 12px 12px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
-
         .user-message {
             background: #dcf8c6;
             align-self: flex-end;
             border-radius: 12px 0 12px 12px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
-
         .chat-input {
             padding: 15px;
             background: #f0f2f5;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
         }
-
         .chat-input input {
             flex: 1;
             padding: 12px 16px;
@@ -101,8 +90,7 @@
             outline: none;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-
-        .chat-input button {
+        .btn-send {
             width: 45px;
             height: 45px;
             background: linear-gradient(135deg, #25D366, #128C7E);
@@ -116,9 +104,33 @@
             justify-content: center;
             transition: transform 0.2s;
         }
-
-        .chat-input button:hover { transform: scale(1.1); }
-
+        .btn-send:hover { transform: scale(1.1); }
+        .btn-mic {
+            width: 45px;
+            height: 45px;
+            background: white;
+            border: 2px solid #25D366;
+            border-radius: 50%;
+            color: #25D366;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .btn-mic:hover { background: #25D366; color: white; }
+        .btn-mic.listening {
+            background: #ff4444;
+            border-color: #ff4444;
+            color: white;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
         .typing {
             background: white;
             align-self: flex-start;
@@ -127,6 +139,14 @@
             font-size: 20px;
             letter-spacing: 2px;
         }
+        .voice-status {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            padding: 5px;
+            display: none;
+        }
+        .voice-status.show { display: block; }
     </style>
 </head>
 <body>
@@ -145,22 +165,90 @@
                 I can help you with:<br>
                 • View our <b>menu</b><br>
                 • Place an <b>order</b><br><br>
-                Type <b>"menu"</b> to get started!
+                Type or 🎤 <b>speak</b> to get started!
             </div>
         </div>
 
+        <div class="voice-status" id="voiceStatus">🎤 Listening...</div>
+
         <div class="chat-input">
-            <input 
-                type="text" 
-                id="userInput" 
-                placeholder="Type your message..." 
+            <input
+                type="text"
+                id="userInput"
+                placeholder="Type or speak your message..."
                 onkeypress="handleKey(event)"
             />
-            <button onclick="sendMessage()">➤</button>
+            <button class="btn-mic" id="micBtn" onclick="toggleVoice()" title="Click to speak">🎤</button>
+            <button class="btn-send" onclick="sendMessage()">➤</button>
         </div>
     </div>
 
     <script>
+        const API_URL = 'https://web-production-edbf6.up.railway.app/chat';
+        let recognition = null;
+        let isListening = false;
+        let isSpeaking = false;
+
+        // Setup Speech Recognition
+        function setupVoice() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                document.getElementById('micBtn').style.display = 'none';
+                return;
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('userInput').value = transcript;
+                stopListening();
+                sendMessage();
+            };
+
+            recognition.onerror = () => stopListening();
+            recognition.onend = () => stopListening();
+        }
+
+        function toggleVoice() {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        }
+
+        function startListening() {
+            if (!recognition) return;
+            isListening = true;
+            recognition.start();
+            document.getElementById('micBtn').classList.add('listening');
+            document.getElementById('micBtn').textContent = '⏹';
+            document.getElementById('voiceStatus').classList.add('show');
+        }
+
+        function stopListening() {
+            isListening = false;
+            if (recognition) recognition.stop();
+            document.getElementById('micBtn').classList.remove('listening');
+            document.getElementById('micBtn').textContent = '🎤';
+            document.getElementById('voiceStatus').classList.remove('show');
+        }
+
+        // Text to Speech
+        function speak(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const clean = text.replace(/[*_#]/g, '').substring(0, 300);
+            const utterance = new SpeechSynthesisUtterance(clean);
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            window.speechSynthesis.speak(utterance);
+        }
+
         async function sendMessage() {
             const input = document.getElementById('userInput');
             const text = input.value.trim();
@@ -169,7 +257,6 @@
             addMessage(text, 'user');
             input.value = '';
 
-            // Show typing indicator
             const typing = document.createElement('div');
             typing.className = 'typing';
             typing.id = 'typing';
@@ -178,15 +265,15 @@
             scrollToBottom();
 
             try {
-                const response = await fetch('https://web-production-edbf6.up.railway.app/chat', {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text: text })
                 });
                 const data = await response.json();
-                
                 document.getElementById('typing')?.remove();
                 addMessage(data.response, 'bot');
+                speak(data.response);
             } catch (error) {
                 document.getElementById('typing')?.remove();
                 addMessage('Sorry, I am offline. Please try again!', 'bot');
@@ -210,6 +297,8 @@
             const messages = document.getElementById('messages');
             messages.scrollTop = messages.scrollHeight;
         }
+
+        setupVoice();
     </script>
 </body>
 </html>
