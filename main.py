@@ -1,3 +1,5 @@
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -99,3 +101,6 @@ def chat(message: Message):
 @app.get("/orders")
 def get_orders():
     return {"total_orders": len(orders), "orders": orders}
+@app.get("/app")
+def serve_frontend():
+    return FileResponse("index.html")
