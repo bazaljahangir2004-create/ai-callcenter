@@ -390,3 +390,230 @@ def admin_dashboard():
 """
     return HTMLResponse(content=html)
 
+@app.get("/widget.js")
+def widget_script():
+    js = """
+(function() {
+    // Inject styles
+    const style = document.createElement('style');
+    style.textContent = `
+        #botwaiter-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(102,126,234,0.5);
+            z-index: 99999;
+            transition: transform 0.3s;
+            font-size: 26px;
+            border: none;
+        }
+        #botwaiter-btn:hover { transform: scale(1.1); }
+        #botwaiter-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: #22c55e;
+            border-radius: 50%;
+            border: 2px solid white;
+            animation: bw-blink 2s infinite;
+        }
+        @keyframes bw-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        #botwaiter-window {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            width: 380px;
+            height: 580px;
+            background: #0f0f1a;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            z-index: 99998;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
+            font-family: 'Segoe UI', sans-serif;
+        }
+        #botwaiter-window.open { display: flex; }
+        .bw-header {
+            background: #1a1a2e;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .bw-avatar {
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .bw-header-info h4 { color: white; font-size: 13px; margin: 0; }
+        .bw-header-info p { color: #22c55e; font-size: 11px; margin: 2px 0 0; }
+        .bw-close {
+            margin-left: auto;
+            background: none; border: none;
+            color: #64748b; font-size: 20px;
+            cursor: pointer; line-height: 1;
+        }
+        .bw-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #0f0f1a;
+        }
+        .bw-msg {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #e2e8f0;
+        }
+        .bw-msg.bot {
+            background: #1e1e32;
+            align-self: flex-start;
+            border-radius: 4px 14px 14px 14px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .bw-msg.user {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            align-self: flex-end;
+            border-radius: 14px 4px 14px 14px;
+        }
+        .bw-input-area {
+            padding: 12px 16px;
+            background: #1a1a2e;
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .bw-input {
+            flex: 1;
+            padding: 10px 14px;
+            background: #0f0f1a;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+        }
+        .bw-send {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none; color: white;
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            cursor: pointer; font-size: 16px;
+        }
+        .bw-powered {
+            text-align: center;
+            padding: 8px;
+            background: #1a1a2e;
+            font-size: 11px;
+            color: #475569;
+        }
+        .bw-powered a { color: #667eea; text-decoration: none; }
+    `;
+    document.head.appendChild(style);
+
+    // Create widget button
+    const btn = document.createElement('button');
+    btn.id = 'botwaiter-btn';
+    btn.innerHTML = '🤖<div class="bw-badge" id="botwaiter-badge"></div>';
+    document.body.appendChild(btn);
+
+    // Create chat window
+    const win = document.createElement('div');
+    win.id = 'botwaiter-window';
+    win.innerHTML = `
+        <div class="bw-header">
+            <div class="bw-avatar">🍽️</div>
+            <div class="bw-header-info">
+                <h4>AI Restaurant Assistant</h4>
+                <p>● Online — Ready to help</p>
+            </div>
+            <button class="bw-close" onclick="document.getElementById('botwaiter-window').classList.remove('open')">✕</button>
+        </div>
+        <div class="bw-messages" id="bw-messages">
+            <div class="bw-msg bot">Salam! 👋 I can help you with our menu and orders. Type "menu" to get started!</div>
+        </div>
+        <div class="bw-input-area">
+            <input class="bw-input" id="bw-input" placeholder="Type your message..." />
+            <button class="bw-send" onclick="bwSend()">➤</button>
+        </div>
+        <div class="bw-powered">Powered by <a href="https://web-production-edbf6.up.railway.app" target="_blank">BotWaiter</a></div>
+    `;
+    document.body.appendChild(win);
+
+    // Toggle window
+    btn.onclick = () => {
+        win.classList.toggle('open');
+    };
+
+    // Enter key
+    setTimeout(() => {
+        const input = document.getElementById('bw-input');
+        if (input) input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') bwSend();
+        });
+    }, 500);
+
+    // Send message
+    window.bwSend = async function() {
+        const input = document.getElementById('bw-input');
+        const messages = document.getElementById('bw-messages');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const userMsg = document.createElement('div');
+        userMsg.className = 'bw-msg user';
+        userMsg.textContent = text;
+        messages.appendChild(userMsg);
+        input.value = '';
+
+        const typing = document.createElement('div');
+        typing.className = 'bw-msg bot';
+        typing.id = 'bw-typing';
+        typing.textContent = '...';
+        messages.appendChild(typing);
+        messages.scrollTop = messages.scrollHeight;
+
+        try {
+            const res = await fetch('https://web-production-edbf6.up.railway.app/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text, session_id: 'widget_' + Date.now() })
+            });
+            const data = await res.json();
+            document.getElementById('bw-typing')?.remove();
+            const botMsg = document.createElement('div');
+            botMsg.className = 'bw-msg bot';
+            botMsg.textContent = data.response;
+            messages.appendChild(botMsg);
+            messages.scrollTop = messages.scrollHeight;
+        } catch(e) {
+            document.getElementById('bw-typing')?.remove();
+        }
+    };
+})();
+"""
+    from fastapi.responses import Response
+    return Response(content=js, media_type="application/javascript")
