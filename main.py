@@ -389,3 +389,7 @@ def admin_dashboard():
 </html>
 """
     return HTMLResponse(content=html)
+
+@app.get("/")
+def landing_page():
+    return FileResponse("landing.html")

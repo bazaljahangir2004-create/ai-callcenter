@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotWaiter — AI Call Center for Pakistani Businesses</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { font-family: 'Inter', sans-serif; background: #0a0a0f; color: #e2e8f0; overflow-x: hidden; }
+
+        /* NAV */
+        nav {
+            position: fixed; top: 0; width: 100%; z-index: 100;
+            background: rgba(10,10,15,0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 16px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-size: 20px; font-weight: 700; color: white; }
+        .logo span { color: #a78bfa; }
+        .nav-links { display: flex; gap: 32px; }
+        .nav-links a { color: #94a3b8; text-decoration: none; font-size: 14px; transition: color 0.2s; }
+        .nav-links a:hover { color: white; }
+        .nav-cta {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; border: none; padding: 10px 20px;
+            border-radius: 10px; font-size: 14px; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-weight: 500;
+            text-decoration: none;
+        }
+
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: flex; align-items: center;
+            padding: 120px 40px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-bg {
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 20% 50%, rgba(102,126,234,0.15) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 50%, rgba(118,75,162,0.15) 0%, transparent 60%);
+        }
+        .hero-content { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; width: 100%; position: relative; }
+        
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(167,139,250,0.1);
+            border: 1px solid rgba(167,139,250,0.3);
+            padding: 6px 14px; border-radius: 20px;
+            font-size: 13px; color: #a78bfa; margin-bottom: 24px;
+        }
+        .hero h1 { font-size: 52px; font-weight: 800; line-height: 1.15; margin-bottom: 20px; }
+        .hero h1 span { background: linear-gradient(135deg, #667eea, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 18px; color: #94a3b8; line-height: 1.7; margin-bottom: 36px; }
+        
+        .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; border: none; padding: 14px 28px;
+            border-radius: 12px; font-size: 15px; cursor: pointer;
+            font-family: 'Inter', sans-serif; font-weight: 600;
+            text-decoration: none; transition: transform 0.2s;
+        }
+        .btn-primary:hover { transform: translateY(-2px); }
+        .btn-secondary {
+            background: rgba(255,255,255,0.06);
+            color: white; border: 1px solid rgba(255,255,255,0.1);
+            padding: 14px 28px; border-radius: 12px; font-size: 15px;
+            cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 500;
+            text-decoration: none; transition: all 0.2s;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+        .hero-stats { display: flex; gap: 32px; margin-top: 40px; }
+        .stat { }
+        .stat-num { font-size: 28px; font-weight: 700; color: #a78bfa; }
+        .stat-label { font-size: 13px; color: #64748b; margin-top: 2px; }
+
+        /* DEMO CHAT */
+        .demo-container {
+            background: #1e1e32;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+        }
+        .demo-header {
+            background: #16162a;
+            padding: 12px 16px;
+            display: flex; align-items: center; gap: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .demo-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .demo-title { color: #64748b; font-size: 12px; margin-left: 8px; }
+        .demo-chat-header {
+            background: #1a1a2e;
+            padding: 14px 18px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .demo-avatar {
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .demo-chat-info h4 { color: white; font-size: 13px; }
+        .demo-chat-info p { color: #22c55e; font-size: 11px; }
+        .demo-messages { padding: 16px; height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #0f0f1a; }
+        .demo-msg { max-width: 80%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.5; }
+        .demo-msg.bot { background: #1e1e32; color: #e2e8f0; align-self: flex-start; border-radius: 4px 14px 14px 14px; border: 1px solid rgba(255,255,255,0.06); }
+        .demo-msg.user { background: linear-gradient(135deg, #667eea, #764ba2); color: white; align-self: flex-end; border-radius: 14px 4px 14px 14px; }
+        .demo-input-area { padding: 12px 16px; background: #1a1a2e; display: flex; gap: 8px; }
+        .demo-input { flex: 1; padding: 10px 14px; background: #0f0f1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-size: 13px; outline: none; font-family: 'Inter', sans-serif; }
+        .demo-send { background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: white; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 14px; }
+
+        /* FEATURES */
+        .features { padding: 100px 40px; }
+        .section-header { text-align: center; margin-bottom: 60px; }
+        .section-badge {
+            display: inline-block;
+            background: rgba(167,139,250,0.1);
+            border: 1px solid rgba(167,139,250,0.3);
+            padding: 6px 14px; border-radius: 20px;
+            font-size: 13px; color: #a78bfa; margin-bottom: 16px;
+        }
+        .section-header h2 { font-size: 40px; font-weight: 700; margin-bottom: 16px; }
+        .section-header p { color: #64748b; font-size: 16px; max-width: 500px; margin: 0 auto; }
+
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1100px; margin: 0 auto; }
+        .feature-card {
+            background: #1e1e32;
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 28px; border-radius: 16px;
+            transition: border-color 0.3s;
+        }
+        .feature-card:hover { border-color: rgba(167,139,250,0.3); }
+        .feature-icon { font-size: 32px; margin-bottom: 16px; }
+        .feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+        .feature-card p { color: #64748b; font-size: 14px; line-height: 1.6; }
+
+        /* PRICING */
+        .pricing { padding: 100px 40px; background: #0d0d18; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 900px; margin: 0 auto; }
+        .pricing-card {
+            background: #1e1e32;
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 32px; border-radius: 20px;
+            position: relative;
+        }
+        .pricing-card.popular {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+        }
+        .popular-badge {
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+        }
+        .pricing-card h3 { font-size: 16px; color: #94a3b8; margin-bottom: 8px; }
+        .price { font-size: 36px; font-weight: 700; margin-bottom: 4px; }
+        .price span { font-size: 16px; color: #64748b; font-weight: 400; }
+        .pricing-desc { color: #64748b; font-size: 13px; margin-bottom: 24px; }
+        .pricing-features { list-style: none; margin-bottom: 28px; }
+        .pricing-features li { padding: 8px 0; font-size: 14px; color: #94a3b8; display: flex; gap: 10px; }
+        .pricing-features li::before { content: "✓"; color: #22c55e; font-weight: 700; }
+        .btn-plan {
+            width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white; border-radius: 10px; font-size: 14px;
+            cursor: pointer; font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+        }
+        .btn-plan.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+        }
+
+        /* FOOTER */
+        footer {
+            padding: 40px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        footer p { color: #475569; font-size: 14px; }
+        .footer-links { display: flex; gap: 24px; }
+        .footer-links a { color: #475569; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="logo">Bot<span>Waiter</span></div>
+    <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#demo">Demo</a>
+        <a href="#pricing">Pricing</a>
+        <a href="https://web-production-edbf6.up.railway.app/admin" target="_blank">Admin</a>
+    </div>
+    <a href="#demo" class="nav-cta">Try Live Demo →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+        <div>
+            <div class="hero-badge">🇵🇰 Built for Pakistani Businesses</div>
+            <h1>Replace Your <span>Call Center</span> With AI</h1>
+            <p>BotWaiter handles customer orders, feedback, and support in Urdu & English — 24/7, at a fraction of the cost of a call center.</p>
+            <div class="hero-buttons">
+                <a href="#demo" class="btn-primary">Try Live Demo →</a>
+                <a href="https://web-production-edbf6.up.railway.app/admin" target="_blank" class="btn-secondary">View Dashboard</a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-num">70%</div>
+                    <div class="stat-label">Cost Reduction</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-num">24/7</div>
+                    <div class="stat-label">Always Online</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-num">2 min</div>
+                    <div class="stat-label">Setup Time</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIVE DEMO -->
+        <div class="demo-container" id="demo">
+            <div class="demo-header">
+                <div class="demo-dot" style="background:#ff5f57"></div>
+                <div class="demo-dot" style="background:#febc2e"></div>
+                <div class="demo-dot" style="background:#28c840"></div>
+                <span class="demo-title">Live Demo — Try it now!</span>
+            </div>
+            <div class="demo-chat-header">
+                <div class="demo-avatar">🍽️</div>
+                <div class="demo-chat-info">
+                    <h4>AI Restaurant Assistant</h4>
+                    <p>● Online — Ready to help</p>
+                </div>
+            </div>
+            <div class="demo-messages" id="demoMessages">
+                <div class="demo-msg bot">Salam! 👋 I'm your AI assistant. Type "menu" to see our items or place an order!</div>
+            </div>
+            <div class="demo-input-area">
+                <input class="demo-input" id="demoInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') demoSend()"/>
+                <button class="demo-send" onclick="demoSend()">➤</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+    <div class="section-header">
+        <div class="section-badge">✨ Features</div>
+        <h2>Everything Your Business Needs</h2>
+        <p>From order taking to customer feedback — fully automated</p>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🗣️</div>
+            <h3>Urdu + English AI</h3>
+            <p>Naturally understands and responds in the way Pakistanis actually talk — mixing Urdu and English seamlessly.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🎤</div>
+            <h3>Voice Support</h3>
+            <p>Customers can speak their orders. The AI listens, understands, and responds with natural voice output.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Live Dashboard</h3>
+            <p>Real-time analytics showing orders, revenue, top items, and customer ratings in a beautiful dashboard.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">⭐</div>
+            <h3>Customer Ratings</h3>
+            <p>Automatically collects feedback after every order. Track satisfaction and improve your service.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🔌</div>
+            <h3>Easy Integration</h3>
+            <p>One line of code to add the chat widget to any existing website. No technical knowledge required.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">💰</div>
+            <h3>Save 70% Costs</h3>
+            <p>Replace expensive call center staff. One AI handles unlimited customers simultaneously, 24/7.</p>
+        </div>
+    </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+    <div class="section-header">
+        <div class="section-badge">💎 Pricing</div>
+        <h2>Simple, Transparent Pricing</h2>
+        <p>No hidden fees. Cancel anytime.</p>
+    </div>
+    <div class="pricing-grid">
+        <div class="pricing-card">
+            <h3>Starter</h3>
+            <div class="price">Rs.9,999 <span>/month</span></div>
+            <div class="pricing-desc">Perfect for small restaurants</div>
+            <ul class="pricing-features">
+                <li>Up to 500 orders/month</li>
+                <li>Text chat only</li>
+                <li>Basic dashboard</li>
+                <li>Email support</li>
+            </ul>
+            <button class="btn-plan">Get Started</button>
+        </div>
+        <div class="pricing-card popular">
+            <div class="popular-badge">Most Popular</div>
+            <h3>Professional</h3>
+            <div class="price">Rs.19,999 <span>/month</span></div>
+            <div class="pricing-desc">For growing businesses</div>
+            <ul class="pricing-features">
+                <li>Unlimited orders</li>
+                <li>Voice support</li>
+                <li>Advanced analytics</li>
+                <li>Custom menu & branding</li>
+                <li>Priority support</li>
+            </ul>
+            <button class="btn-plan primary">Get Started</button>
+        </div>
+        <div class="pricing-card">
+            <h3>Enterprise</h3>
+            <div class="price">Custom</div>
+            <div class="pricing-desc">For chains & large businesses</div>
+            <ul class="pricing-features">
+                <li>Multiple branches</li>
+                <li>WhatsApp integration</li>
+                <li>Custom AI training</li>
+                <li>Dedicated support</li>
+            </ul>
+            <button class="btn-plan">Contact Us</button>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>© 2026 BotWaiter — AI Call Center for Pakistan 🇵🇰</p>
+    <div class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="https://web-production-edbf6.up.railway.app/admin" target="_blank">Admin</a>
+    </div>
+</footer>
+
+<script>
+async function demoSend() {
+    const input = document.getElementById('demoInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const messages = document.getElementById('demoMessages');
+    
+    // Add user message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'demo-msg user';
+    userMsg.textContent = text;
+    messages.appendChild(userMsg);
+    input.value = '';
+    messages.scrollTop = messages.scrollHeight;
+
+    // Typing indicator
+    const typing = document.createElement('div');
+    typing.className = 'demo-msg bot';
+    typing.id = 'demoTyping';
+    typing.textContent = '...';
+    messages.appendChild(typing);
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+        const response = await fetch('https://web-production-edbf6.up.railway.app/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, session_id: 'demo' })
+        });
+        const data = await response.json();
+        document.getElementById('demoTyping')?.remove();
+        
+        const botMsg = document.createElement('div');
+        botMsg.className = 'demo-msg bot';
+        botMsg.textContent = data.response;
+        messages.appendChild(botMsg);
+        messages.scrollTop = messages.scrollHeight;
+    } catch(e) {
+        document.getElementById('demoTyping')?.remove();
+        const errMsg = document.createElement('div');
+        errMsg.className = 'demo-msg bot';
+        errMsg.textContent = 'Connection error. Please try again!';
+        messages.appendChild(errMsg);
+    }
+}
+</script>
+</body>
+</html>
