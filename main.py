@@ -59,7 +59,7 @@ class Message(BaseModel):
 
 @app.get("/")
 def home():
-    return {"message": "AI Call Center is running!"}
+    return FileResponse("landing.html")
 
 @app.post("/chat")
 def chat(message: Message):
@@ -390,6 +390,3 @@ def admin_dashboard():
 """
     return HTMLResponse(content=html)
 
-@app.get("/")
-def landing_page():
-    return FileResponse("landing.html")
