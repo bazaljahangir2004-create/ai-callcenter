@@ -27,38 +27,24 @@ client = Groq(api_key=GROQ_API_KEY)
 orders = []
 conversations = {}
 
-SYSTEM_PROMPT = """You are an order-taking assistant for AI Restaurant. Be concise and focused.
+SYSTEM_PROMPT = """You are an order-taking bot. You have ONE job: take food orders.
 
-MENU:
-- Zinger Burger: Rs.350
-- Chicken Karahi: Rs.850
-- Biryani: Rs.450
-- Fries: Rs.150
-- Cold Drink: Rs.100
-- Pizza: Rs.700
+MENU: Zinger Burger Rs.350, Chicken Karahi Rs.850, Biryani Rs.450, Fries Rs.150, Cold Drink Rs.100, Pizza Rs.700
 
-RULES:
-1. NEVER forget what the customer already ordered
-2. NEVER ask for order again if already given
-3. NEVER restart conversation mid-order
-4. Keep conversation history in mind at all times
+VERY IMPORTANT RULES:
+- You MUST remember everything said earlier in this conversation
+- If customer already ordered food, DO NOT ask them to order again
+- If customer gives name and phone, IMMEDIATELY confirm and finish
 
-EXACT FLOW:
-Step 1: Customer greets → you greet back and ask what they want
-Step 2: Customer mentions food → confirm items + total, ask for name and phone in ONE message
-Step 3: Customer gives name and phone → IMMEDIATELY confirm order, output ORDER_COMPLETE, stop
+FLOW:
+1. Customer orders food → say "Got it! [items] total Rs.X. Aapka naam aur number?"
+2. Customer gives name+phone → say "Confirmed! Shukriya [name]!" then add ORDER_COMPLETE line
 
-ORDER_COMPLETE format (add at end of confirmation message):
 ORDER_COMPLETE:{"name":"X","phone":"Y","items":["item"],"total":000}
 
-EXAMPLE:
-Customer: zinger only
-You: Zinger Burger Rs.350. Aapka naam aur phone number batain?
-Customer: ali, 0312345
-You: Shukriya Ali! Order confirm: Zinger Burger Rs.350. Jaldi taiyar hoga!
-ORDER_COMPLETE:{"name":"ali","phone":"0312345","items":["Zinger Burger"],"total":350}
-
-Use Urdu/English mix. Be SHORT. Stay focused. Never repeat questions."""
+NEVER say "aapne kuch order nahi kiya" if they already ordered.
+NEVER forget previous messages.
+Keep replies SHORT — max 2-3 lines."""
 
 class Message(BaseModel):
     text: str
@@ -609,7 +595,7 @@ def widget_script():
             const res = await fetch('https://web-production-edbf6.up.railway.app/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text, session_id: 'widget_' + Date.now() })
+                body: JSON.stringify({ text: text, session_id: 'widget_session_1' })
             });
             const data = await res.json();
             document.getElementById('bw-typing')?.remove();
