@@ -110,77 +110,281 @@ def serve_frontend():
 
 @app.get("/admin")
 def admin_dashboard():
-    html = """
+    total_revenue = sum(o.get('total', 0) for o in orders)
+    total_orders = len(orders)
+    unique_customers = len(set(o.get('phone','') for o in orders))
+    avg_rating = round(sum(o.get('rating', 0) for o in orders if o.get('rating')) / max(len([o for o in orders if o.get('rating')]), 1), 1)
+
+    # Build chart data
+    from collections import Counter
+    item_counts = Counter()
+    for o in orders:
+        for item in o.get('items', []):
+            item_counts[item] += 1
+    top_items = item_counts.most_common(5)
+    chart_labels = str([i[0] for i in top_items])
+    chart_values = str([i[1] for i in top_items])
+
+    html = f"""
 <!DOCTYPE html>
 <html>
 <head>
     <title>Admin Dashboard</title>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="30">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
-        .header { background: linear-gradient(135deg, #25D366, #128C7E); color: white; padding: 25px; border-radius: 15px; margin-bottom: 25px; }
-        .header h1 { font-size: 24px; }
-        .header p { opacity: 0.85; margin-top: 5px; }
-        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
-        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-align: center; }
-        .stat-card h2 { font-size: 32px; color: #25D366; }
-        .stat-card p { color: #666; margin-top: 5px; }
-        .orders-table { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden; }
-        .orders-table h3 { padding: 20px; border-bottom: 1px solid #eee; color: #333; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f8f9fa; padding: 12px 20px; text-align: left; color: #666; font-size: 13px; }
-        td { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; }
-        tr:last-child td { border-bottom: none; }
-        .badge { background: #e8f5e9; color: #25D366; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-        .no-orders { text-align: center; padding: 40px; color: #999; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: 'Inter', sans-serif; background: #0f0f1a; color: #e2e8f0; padding: 24px; }}
+        
+        .header {{
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 24px 28px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .header h1 {{ font-size: 22px; font-weight: 700; }}
+        .header p {{ opacity: 0.85; font-size: 13px; margin-top: 4px; }}
+        .live-badge {{
+            background: rgba(255,255,255,0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }}
+        .live-dot {{
+            width: 7px; height: 7px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }}
+        @keyframes blink {{
+            0%, 100% {{ opacity: 1; }}
+            50% {{ opacity: 0.3; }}
+        }}
+
+        .stats-grid {{
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }}
+        .stat-card {{
+            background: #1e1e32;
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 20px;
+            border-radius: 14px;
+        }}
+        .stat-card .icon {{
+            font-size: 24px;
+            margin-bottom: 12px;
+        }}
+        .stat-card .value {{
+            font-size: 28px;
+            font-weight: 700;
+            color: #a78bfa;
+        }}
+        .stat-card .label {{
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 4px;
+        }}
+
+        .charts-grid {{
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }}
+        .chart-card {{
+            background: #1e1e32;
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 20px;
+            border-radius: 14px;
+        }}
+        .chart-card h3 {{
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #94a3b8;
+        }}
+
+        .orders-card {{
+            background: #1e1e32;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            overflow: hidden;
+        }}
+        .orders-card-header {{
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .orders-card-header h3 {{ font-size: 15px; font-weight: 600; }}
+        .orders-count {{
+            background: rgba(167,139,250,0.15);
+            color: #a78bfa;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }}
+
+        table {{ width: 100%; border-collapse: collapse; }}
+        th {{
+            padding: 12px 24px;
+            text-align: left;
+            font-size: 12px;
+            color: #475569;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #16162a;
+        }}
+        td {{
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 14px;
+        }}
+        tr:last-child td {{ border-bottom: none; }}
+        tr:hover td {{ background: rgba(255,255,255,0.02); }}
+
+        .badge {{
+            background: rgba(34,197,94,0.15);
+            color: #22c55e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }}
+        .rating-stars {{ color: #fbbf24; font-size: 13px; }}
+        .no-orders {{
+            text-align: center;
+            padding: 48px;
+            color: #475569;
+        }}
+        .refresh-btn {{
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }}
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🍽️ AI Restaurant — Admin Dashboard</h1>
-        <p>Live orders • Auto-refreshes every 30 seconds</p>
-    </div>
-    <div class="stats">
-        <div class="stat-card">
-            <h2>""" + str(len(orders)) + """</h2>
-            <p>Total Orders</p>
+        <div>
+            <h1>🍽️ AI Restaurant — Admin Dashboard</h1>
+            <p>Real-time order management and analytics</p>
         </div>
-        <div class="stat-card">
-            <h2>Rs.""" + str(sum(o.get('total', 0) for o in orders)) + """</h2>
-            <p>Total Revenue</p>
-        </div>
-        <div class="stat-card">
-            <h2>""" + str(len(set(o.get('phone','') for o in orders))) + """</h2>
-            <p>Unique Customers</p>
+        <div style="display:flex;gap:12px;align-items:center;">
+            <button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
+            <div class="live-badge">
+                <div class="live-dot"></div>
+                Live
+            </div>
         </div>
     </div>
-    <div class="orders-table">
-        <h3>📋 All Orders</h3>
-        """ + ("""
-        <table>
-            <tr>
-                <th>#</th>
-                <th>Customer</th>
-                <th>Phone</th>
-                <th>Items</th>
-                <th>Total</th>
-                <th>Time</th>
-            </tr>
-            """ + "".join([f"""
-            <tr>
-                <td>{o.get('id','')}</td>
-                <td><b>{o.get('name','')}</b></td>
-                <td>{o.get('phone','')}</td>
-                <td>{', '.join(o.get('items', []))}</td>
-                <td><span class="badge">Rs.{o.get('total','')}</span></td>
-                <td>{o.get('time','')}</td>
-            </tr>
-            """ for o in reversed(orders)]) + """
-        </table>
-        """ if orders else '<div class="no-orders">No orders yet. Start chatting! 🤖</div>') + """
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="icon">📦</div>
+            <div class="value">{total_orders}</div>
+            <div class="label">Total Orders</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon">💰</div>
+            <div class="value">Rs.{total_revenue}</div>
+            <div class="label">Total Revenue</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon">👥</div>
+            <div class="value">{unique_customers}</div>
+            <div class="label">Unique Customers</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon">⭐</div>
+            <div class="value">{avg_rating}/5</div>
+            <div class="label">Avg Rating</div>
+        </div>
     </div>
+
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>📊 Top Ordered Items</h3>
+            <canvas id="itemsChart" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>💰 Revenue Overview</h3>
+            <canvas id="revenueChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <div class="orders-card">
+        <div class="orders-card-header">
+            <h3>📋 All Orders</h3>
+            <span class="orders-count">{total_orders} orders</span>
+        </div>
+        {"<table><tr><th>#</th><th>Customer</th><th>Phone</th><th>Items</th><th>Total</th><th>Rating</th><th>Time</th></tr>" + 
+        "".join([f"<tr><td>{o.get('id','')}</td><td><b>{o.get('name','')}</b></td><td>{o.get('phone','')}</td><td>{', '.join(o.get('items',[]))}</td><td><span class='badge'>Rs.{o.get('total','')}</span></td><td><span class='rating-stars'>{'⭐' * o.get('rating',0)}</span></td><td>{o.get('time','')}</td></tr>" for o in reversed(orders)]) +
+        "</table>" if orders else "<div class='no-orders'>No orders yet 🤖</div>"}
+    </div>
+
+    <script>
+        const labels = {chart_labels};
+        const values = {chart_values};
+
+        if (labels.length > 0) {{
+            new Chart(document.getElementById('itemsChart'), {{
+                type: 'bar',
+                data: {{
+                    labels: labels,
+                    datasets: [{{
+                        label: 'Orders',
+                        data: values,
+                        backgroundColor: ['#667eea','#764ba2','#f093fb','#f5576c','#4facfe'],
+                        borderRadius: 8,
+                    }}]
+                }},
+                options: {{
+                    plugins: {{ legend: {{ display: false }} }},
+                    scales: {{
+                        x: {{ ticks: {{ color: '#64748b' }}, grid: {{ color: 'rgba(255,255,255,0.05)' }} }},
+                        y: {{ ticks: {{ color: '#64748b' }}, grid: {{ color: 'rgba(255,255,255,0.05)' }} }}
+                    }}
+                }}
+            }});
+
+            new Chart(document.getElementById('revenueChart'), {{
+                type: 'doughnut',
+                data: {{
+                    labels: labels,
+                    datasets: [{{
+                        data: values,
+                        backgroundColor: ['#667eea','#764ba2','#f093fb','#f5576c','#4facfe'],
+                        borderWidth: 0,
+                    }}]
+                }},
+                options: {{
+                    plugins: {{
+                        legend: {{
+                            position: 'bottom',
+                            labels: {{ color: '#94a3b8', padding: 16, font: {{ size: 12 }} }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+    </script>
 </body>
 </html>
 """
