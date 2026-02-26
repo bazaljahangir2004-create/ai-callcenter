@@ -1,13 +1,20 @@
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from pydantic import BaseModel
 from groq import Groq
+from dotenv import load_dotenv
 import os
+import httpx
+import datetime
 
-app = FastAPI()
+load_dotenv()
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+client = Groq(api_key=GROQ_API_KEY)
 
 app.add_middleware(
     CORSMiddleware,
@@ -80,22 +87,58 @@ def chat(message: Message):
     
     # Detect completed order
     if "ORDER_COMPLETE:" in bot_reply:
-        try:
-            import json, re
-            match = re.search(r'ORDER_COMPLETE:(\{.*\})', bot_reply)
-            if match:
-                order_data = json.loads(match.group(1))
-                order_data["id"] = len(orders) + 1
-                order_data["time"] = __import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                orders.append(order_data)
-                bot_reply = bot_reply.replace(match.group(0), "").strip()
-        except:
-            pass
+    try:
+        import json, re
+        match = re.search(r'ORDER_COMPLETE:(\{.*\})', bot_reply)
+        if match:
+            order_data = json.loads(match.group(1))
+            order_data["id"] = len(orders) + 1
+            order_data["time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            orders.append(order_data)
+            bot_reply = bot_reply.replace(match.group(0), "").strip()
+            
+            # Save to Supabase
+            if SUPABASE_URL and SUPABASE_KEY:
+                try:
+                    with httpx.Client() as http:
+                        http.post(
+                            f"{SUPABASE_URL}/rest/v1/orders",
+                            headers={
+                                "apikey": SUPABASE_KEY,
+                                "Authorization": f"Bearer {SUPABASE_KEY}",
+                                "Content-Type": "application/json",
+                                "Prefer": "return=minimal"
+                            },
+                            json={
+                                "name": order_data.get("name", ""),
+                                "phone": order_data.get("phone", ""),
+                                "items": order_data.get("items", []),
+                                "total": order_data.get("total", 0)
+                            }
+                        )
+                except:
+                    pass
+    except:
+        pass
     
     return {"response": bot_reply}
 
 @app.get("/orders")
 def get_orders():
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            with httpx.Client() as http:
+                response = http.get(
+                    f"{SUPABASE_URL}/rest/v1/orders?select=*&order=id.desc",
+                    headers={
+                        "apikey": SUPABASE_KEY,
+                        "Authorization": f"Bearer {SUPABASE_KEY}"
+                    }
+                )
+                db_orders = response.json()
+                return {"total_orders": len(db_orders), "orders": db_orders}
+        except:
+            pass
     return {"total_orders": len(orders), "orders": orders}
 @app.get("/app")
 def serve_frontend():
